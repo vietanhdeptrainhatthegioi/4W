@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4W - Công cụ tổ chức cá nhân</title>
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="4W - Công cụ tổ chức và quản lý công việc">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="4W">
+    <link rel="icon" type="image/png" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23667eea' width='192' height='192'/><text x='50%' y='50%' font-size='120' font-weight='bold' fill='white' text-anchor='middle' dy='.3em'>4W</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23667eea' width='192' height='192' rx='45'/><text x='50%' y='50%' font-size='120' font-weight='bold' fill='white' text-anchor='middle' dy='.3em'>4W</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <title>4W - Công cụ tổ chức</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,27 +19,18 @@
         <!-- Header -->
         <header class="header">
             <h1>4W</h1>
-            <p class="subtitle">Công cụ tổ chức và quản lý công việc</p>
         </header>
-
-        <!-- Navigation -->
-        <nav class="navbar">
-            <button class="nav-btn active" data-tab="calendar">📅 Lịch tuần</button>
-            <button class="nav-btn" data-tab="todo">✅ To-do list</button>
-            <button class="nav-btn" data-tab="attendance">📝 Điểm danh</button>
-            <button class="nav-btn" data-tab="contacts">📞 Tra cứu SDT</button>
-        </nav>
 
         <!-- Main Content -->
         <main class="main-content">
             <!-- Calendar Tab -->
             <section id="calendar" class="tab-content active">
-                <h2>Lịch hàng tuần</h2>
+                <h2>📅 Lịch tuần</h2>
                 <div class="calendar-container">
                     <div class="week-header">
-                        <button id="prevWeek" class="week-btn">← Tuần trước</button>
+                        <button id="prevWeek" class="week-btn">← Trước</button>
                         <h3 id="weekDisplay"></h3>
-                        <button id="nextWeek" class="week-btn">Tuần sau →</button>
+                        <button id="nextWeek" class="week-btn">Sau →</button>
                     </div>
                     <div id="calendarGrid" class="calendar-grid"></div>
                 </div>
@@ -64,23 +63,20 @@
 
             <!-- To-do Tab -->
             <section id="todo" class="tab-content">
-                <h2>To-do list</h2>
+                <h2>✅ To-do list</h2>
                 <div class="todo-input">
-                    <input type="text" id="todoInput" placeholder="Nhập công việc cần làm...">
-                    <button id="addTodoBtn" class="btn-primary">Thêm</button>
+                    <input type="text" id="todoInput" placeholder="Nhập công việc...">
+                    <button id="addTodoBtn" class="btn-primary btn-icon">+</button>
                 </div>
                 <ul id="todoList" class="todo-list"></ul>
             </section>
 
             <!-- Attendance Tab -->
             <section id="attendance" class="tab-content">
-                <h2>Điểm danh</h2>
+                <h2>📝 Điểm danh</h2>
                 <div class="attendance-input">
-                    <div class="form-group">
-                        <label>Tên:</label>
-                        <input type="text" id="attendanceName" placeholder="Nhập tên">
-                    </div>
-                    <button id="addAttendanceBtn" class="btn-primary">Thêm thành viên</button>
+                    <input type="text" id="attendanceName" placeholder="Nhập tên">
+                    <button id="addAttendanceBtn" class="btn-primary btn-icon">+</button>
                 </div>
                 <table class="attendance-table">
                     <thead>
@@ -96,20 +92,14 @@
 
             <!-- Contacts Tab -->
             <section id="contacts" class="tab-content">
-                <h2>Tra cứu số điện thoại</h2>
+                <h2>📞 Tra cứu SDT</h2>
                 <div class="contacts-input">
-                    <div class="form-group">
-                        <label>Tên:</label>
-                        <input type="text" id="contactName" placeholder="Nhập tên">
-                    </div>
-                    <div class="form-group">
-                        <label>Số điện thoại:</label>
-                        <input type="tel" id="contactPhone" placeholder="Nhập số điện thoại">
-                    </div>
-                    <button id="addContactBtn" class="btn-primary">Thêm liên hệ</button>
+                    <input type="text" id="contactName" placeholder="Tên">
+                    <input type="tel" id="contactPhone" placeholder="Số điện thoại">
+                    <button id="addContactBtn" class="btn-primary btn-icon">+</button>
                 </div>
                 <div class="search-contact">
-                    <input type="text" id="searchContact" placeholder="Tìm kiếm theo tên hoặc số điện thoại...">
+                    <input type="text" id="searchContact" placeholder="Tìm kiếm...">
                 </div>
                 <table class="contacts-table">
                     <thead>
@@ -123,8 +113,24 @@
                 </table>
             </section>
         </main>
+
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <button class="nav-btn active" data-tab="calendar">📅</button>
+            <button class="nav-btn" data-tab="todo">✅</button>
+            <button class="nav-btn" data-tab="attendance">📝</button>
+            <button class="nav-btn" data-tab="contacts">📞</button>
+        </nav>
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => {
+                console.log('ServiceWorker registration failed: ', err);
+            });
+        }
+    </script>
 </body>
 </html>
