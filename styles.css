@@ -103,6 +103,25 @@ body {
     border-color: #667eea;
 }
 
+.checkbox-group {
+    margin-bottom: 12px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+}
+
 /* Buttons */
 .btn-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -129,7 +148,7 @@ body {
 }
 
 .btn-small {
-    padding: 8px 12px;
+    padding: 6px 10px;
     font-size: 0.85em;
 }
 
@@ -228,6 +247,9 @@ body {
     border-radius: 4px;
     margin-bottom: 4px;
     border-left: 2px solid #667eea;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .event-time {
@@ -235,6 +257,17 @@ body {
     font-weight: 600;
     display: block;
     font-size: 0.75em;
+}
+
+.event-badge {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 0.7em;
+    font-weight: 600;
+    width: fit-content;
 }
 
 .event-input {

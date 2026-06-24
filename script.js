@@ -9,6 +9,7 @@ class DataManager {
 
     loadData() {
         this.events = JSON.parse(localStorage.getItem('4w_events')) || {};
+        this.recurringEvents = JSON.parse(localStorage.getItem('4w_recurring_events')) || [];
         this.todos = JSON.parse(localStorage.getItem('4w_todos')) || [];
         this.attendance = JSON.parse(localStorage.getItem('4w_attendance')) || [];
         this.contacts = JSON.parse(localStorage.getItem('4w_contacts')) || [];
@@ -17,25 +18,77 @@ class DataManager {
 
     saveData() {
         localStorage.setItem('4w_events', JSON.stringify(this.events));
+        localStorage.setItem('4w_recurring_events', JSON.stringify(this.recurringEvents));
         localStorage.setItem('4w_todos', JSON.stringify(this.todos));
         localStorage.setItem('4w_attendance', JSON.stringify(this.attendance));
         localStorage.setItem('4w_contacts', JSON.stringify(this.contacts));
     }
 
-    addEvent(dayOfWeek, time, name) {
-        const dateKey = this.getDateKey(dayOfWeek);
-        if (!this.events[dateKey]) {
-            this.events[dateKey] = [];
+    addEvent(dayOfWeek, time, name, recurring = false) {
+        const eventId = Date.now();
+        
+        if (recurring) {
+            // Thêm vào recurring events
+            this.recurringEvents.push({
+                id: eventId,
+                dayOfWeek,
+                time,
+                name
+            });
+            
+            // Thêm vào tất cả các tuần (hiện tại + 52 tuần tới)
+            for (let week = -4; week <= 52; week++) {
+                const dateKey = this.getDateKeyForWeek(dayOfWeek, week);
+                if (!this.events[dateKey]) {
+                    this.events[dateKey] = [];
+                }
+                this.events[dateKey].push({
+                    time,
+                    name,
+                    id: eventId,
+                    isRecurring: true
+                });
+            }
+        } else {
+            // Thêm sự kiện một lần
+            const dateKey = this.getDateKey(dayOfWeek);
+            if (!this.events[dateKey]) {
+                this.events[dateKey] = [];
+            }
+            this.events[dateKey].push({
+                time,
+                name,
+                id: eventId,
+                isRecurring: false
+            });
         }
-        this.events[dateKey].push({ time, name, id: Date.now() });
-        this.events[dateKey].sort((a, b) => a.time.localeCompare(b.time));
+        
+        this.sortEventsByTime();
         this.saveData();
+    }
+
+    sortEventsByTime() {
+        Object.keys(this.events).forEach(dateKey => {
+            this.events[dateKey].sort((a, b) => a.time.localeCompare(b.time));
+        });
     }
 
     removeEvent(dayOfWeek, eventId) {
         const dateKey = this.getDateKey(dayOfWeek);
         if (this.events[dateKey]) {
-            this.events[dateKey] = this.events[dateKey].filter(e => e.id !== eventId);
+            const event = this.events[dateKey].find(e => e.id === eventId);
+            
+            if (event && event.isRecurring) {
+                // Xóa tất cả occurrences của recurring event
+                Object.keys(this.events).forEach(key => {
+                    this.events[key] = this.events[key].filter(e => e.id !== eventId);
+                });
+                // Xóa từ recurring events list
+                this.recurringEvents = this.recurringEvents.filter(e => e.id !== eventId);
+            } else {
+                // Xóa sự kiện một lần
+                this.events[dateKey] = this.events[dateKey].filter(e => e.id !== eventId);
+            }
             this.saveData();
         }
     }
@@ -112,11 +165,15 @@ class DataManager {
     }
 
     getDateKey(dayOfWeek) {
+        return this.getDateKeyForWeek(dayOfWeek, this.currentWeekOffset);
+    }
+
+    getDateKeyForWeek(dayOfWeek, weekOffset) {
         const today = new Date();
         const dayOfWeekToday = today.getDay();
         const offset = dayOfWeek - (dayOfWeekToday === 0 ? 6 : dayOfWeekToday - 1);
         const date = new Date(today);
-        date.setDate(today.getDate() + offset + (this.currentWeekOffset * 7));
+        date.setDate(today.getDate() + offset + (weekOffset * 7));
         return date.toISOString().split('T')[0];
     }
 
@@ -242,7 +299,8 @@ class UIManager {
                     <div class="event-item">
                         <div class="event-time">${event.time}</div>
                         <div>${event.name}</div>
-                        <button class="btn-small btn-danger" onclick="app.removeEventUI(${index}, ${event.id})">Xóa</button>
+                        ${event.isRecurring ? '<span class="event-badge">Lặp</span>' : ''}
+                        <button class="btn-small btn-danger" onclick="app.removeEventUI(${index}, ${event.id})">🗑</button>
                     </div>
                 `).join('');
             }
@@ -285,8 +343,9 @@ class UIManager {
                     <div>
                         <strong>${event.day}</strong> ${event.date.getDate()}/${event.date.getMonth() + 1} - 
                         <span class="event-time">${event.time}</span>: ${event.name}
+                        ${event.isRecurring ? ' <span class="event-badge">Lặp hàng tuần</span>' : ''}
                     </div>
-                    <button class="btn-small btn-danger" onclick="app.removeEventUI(${event.dayIndex}, ${event.id})">Xóa</button>
+                    <button class="btn-small btn-danger" onclick="app.removeEventUI(${event.dayIndex}, ${event.id})">🗑</button>
                 </div>
             `).join('');
         }
@@ -296,21 +355,25 @@ class UIManager {
         const day = parseInt(document.getElementById('eventDay').value);
         const time = document.getElementById('eventTime').value;
         const name = document.getElementById('eventName').value;
+        const recurring = document.getElementById('eventRecurring').checked;
 
         if (!time || !name) {
             alert('Vui lòng nhập đầy đủ thông tin');
             return;
         }
 
-        this.data.addEvent(day, time, name);
+        this.data.addEvent(day, time, name, recurring);
         document.getElementById('eventTime').value = '';
         document.getElementById('eventName').value = '';
+        document.getElementById('eventRecurring').checked = false;
         this.renderCalendar();
     }
 
     removeEventUI(dayOfWeek, eventId) {
-        this.data.removeEvent(dayOfWeek, eventId);
-        this.renderCalendar();
+        if (confirm('Bạn có chắc chắn muốn xóa sự kiện này?')) {
+            this.data.removeEvent(dayOfWeek, eventId);
+            this.renderCalendar();
+        }
     }
 
     previousWeek() {
@@ -336,7 +399,7 @@ class UIManager {
                         <span>${todo.text}</span>
                     </div>
                     <div class="todo-item-actions">
-                        <button class="btn-small btn-danger" onclick="app.removeTodo(${todo.id})">Xóa</button>
+                        <button class="btn-small btn-danger" onclick="app.removeTodo(${todo.id})">🗑</button>
                     </div>
                 </li>
             `).join('');
@@ -356,8 +419,10 @@ class UIManager {
     }
 
     removeTodo(id) {
-        this.data.removeTodo(id);
-        this.renderTodoList();
+        if (confirm('Xóa công việc này?')) {
+            this.data.removeTodo(id);
+            this.renderTodoList();
+        }
     }
 
     toggleTodo(id) {
@@ -384,7 +449,7 @@ class UIManager {
                             <button class="btn-small btn-success" onclick="app.toggleAttendanceStatus(${item.id})">
                                 ${item.status === 'present' ? 'Vắng' : 'Có mặt'}
                             </button>
-                            <button class="btn-small btn-danger" onclick="app.removeAttendance(${item.id})">Xóa</button>
+                            <button class="btn-small btn-danger" onclick="app.removeAttendance(${item.id})">🗑</button>
                         </div>
                     </td>
                 </tr>
@@ -404,8 +469,10 @@ class UIManager {
     }
 
     removeAttendance(id) {
-        this.data.removeAttendance(id);
-        this.renderAttendance();
+        if (confirm('Xóa thành viên này?')) {
+            this.data.removeAttendance(id);
+            this.renderAttendance();
+        }
     }
 
     toggleAttendanceStatus(id) {
@@ -428,7 +495,7 @@ class UIManager {
                     <td>${contact.phone}</td>
                     <td>
                         <div class="table-actions">
-                            <button class="btn-small btn-danger" onclick="app.removeContact(${contact.id})">Xóa</button>
+                            <button class="btn-small btn-danger" onclick="app.removeContact(${contact.id})">🗑</button>
                         </div>
                     </td>
                 </tr>
@@ -452,8 +519,10 @@ class UIManager {
     }
 
     removeContact(id) {
-        this.data.removeContact(id);
-        this.renderContacts();
+        if (confirm('Xóa liên hệ này?')) {
+            this.data.removeContact(id);
+            this.renderContacts();
+        }
     }
 
     searchContacts(query) {
